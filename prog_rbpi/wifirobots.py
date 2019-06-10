@@ -464,7 +464,7 @@ def Communication_Decode():
 			ENA_Speed(buffer[2])
 		elif buffer[1]=='02':#右侧速度
 			ENB_Speed(buffer[2])
-	elif buffer[0]=='07':
+	elif buffer[0]=='07:
                                 if buffer[1]=='00':#
                                     beep_ON()
                                 elif buffer[1]=='01':#
