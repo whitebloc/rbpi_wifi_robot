@@ -6,3 +6,5 @@ The firmware of the raspberry pi can be found at https://github.com/whitebloc/rb
  
 "# rbpi_wifi_robot: last update " 10/06/2019 15:51:46,96 . 
  
+"# rbpi_wifi_robot: last update " 10/06/2019 16:53:20,16 . 
+ 
