@@ -30,3 +30,5 @@ then remplace the 1 and 2 by zero
  
 "# rbpi_wifi_robot: last update " 13/06/2019 15:46:08,99 . 
  
+"# rbpi_wifi_robot: last update " 13/06/2019 15:50:26,32 . 
+ 
