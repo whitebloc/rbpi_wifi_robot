@@ -1,4 +1,10 @@
-The firmware of the raspberry pi can be found at https://drive.google.com/open?id=1Kld7zR_PL5LGDigbNQOSIKdtbWhoOggx
+The firmware of the raspberry pi can be found at https://drive.google.com/file/d/1TEmngARVNKiqgyR24rXTRq2VOaFh6cHN/view?usp=sharing
+
+for the first run you need to disable the check of the disk by :
+
+sudo nano /etc/fstab
+
+then remplace the 1 and 2 by zero
 
 "# rbpi_wifi_robot: last update " 10/06/2019 15:02:09,19 . 
  
@@ -17,4 +23,6 @@ The firmware of the raspberry pi can be found at https://drive.google.com/open?i
 "# rbpi_wifi_robot: last update " 10/06/2019 16:58:17,75 . 
  
 "# rbpi_wifi_robot: last update " 10/06/2019 17:40:26,96 . 
+ 
+"# rbpi_wifi_robot: last update " 13/06/2019 15:44:57,39 . 
  
