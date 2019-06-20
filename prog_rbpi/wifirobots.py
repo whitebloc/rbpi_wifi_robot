@@ -6,6 +6,7 @@ Copyright:XiaoR Geek Tech
 The code can be used free,but not for commerce purpose.
 All rights reserved, unauthorized use will be prosecuted by XiaoR Geek! 
 '''
+
 import os
 from socket import *
 from time import ctime
@@ -25,7 +26,6 @@ global Path_Dect_px
 Path_Dect_px = 320
 global Path_Dect_on
 Path_Dect_on = 0
-
 #######################################
 #############Signal pin defination##############
 #######################################
@@ -351,11 +351,9 @@ def Angle_cal(angle_from_protocol):
 	return angle
 	
 def SetServoAngle(ServoNum,angle_from_protocol):
-	GPIO.output(LED0,False)
 	GPIO.output(LED1,True)
 	GPIO.output(LED2,False)
 	time.sleep(0.01)
-	GPIO.output(LED0,False)
 	GPIO.output(LED1,True)
 	GPIO.output(LED2,True)
 	if ServoNum== 1:
@@ -781,7 +779,7 @@ def Communication_Decode():
 			Cruising_Flag = 0
 			print 'Cruising_Flag正常模式 %d '%Cruising_Flag
 		#else:
-			#Cruising_Flag = 0
+			#Cruising_Flag = 0def send_angle(angle) : 
 	elif buffer[0]=='a0':
 		RevStatus=2
 		Tangle=hex(eval('0x'+buffer[1]))

@@ -6,6 +6,8 @@ sudo nano /etc/fstab
 
 then remplace the 1 and 2 by zero
 
+I have modify the robot to make the radar (ultrasonic sensor) now there are an usb connection between an arduino card and the raspberry pi 3B+ 
+
 "# rbpi_wifi_robot: last update " 10/06/2019 15:02:09,19 . 
  
 "# rbpi_wifi_robot: last update " 10/06/2019 15:03:50,60 . 
@@ -33,4 +35,6 @@ then remplace the 1 and 2 by zero
 "# rbpi_wifi_robot: last update " 13/06/2019 15:50:26,32 . 
  
 "# rbpi_wifi_robot: last update " 13/06/2019 15:52:25,21 . 
+ 
+"# rbpi_wifi_robot: last update " 20/06/2019 18:42:00,08 . 
  
