@@ -8,6 +8,8 @@ then remplace the 1 and 2 by zero
 
 I have modify the robot to make the radar (ultrasonic sensor) now there are an usb connection between an arduino card and the raspberry pi 3B+ 
 
+if tou want a security to the wireless network tou can edit /etc/hostapd/hostapd.conf file
+
 "# rbpi_wifi_robot: last update " 10/06/2019 15:02:09,19 . 
  
 "# rbpi_wifi_robot: last update " 10/06/2019 15:03:50,60 . 
@@ -37,4 +39,6 @@ I have modify the robot to make the radar (ultrasonic sensor) now there are an u
 "# rbpi_wifi_robot: last update " 13/06/2019 15:52:25,21 . 
  
 "# rbpi_wifi_robot: last update " 20/06/2019 18:42:00,08 . 
+ 
+"# rbpi_wifi_robot: last update " 20/06/2019 18:43:12,76 . 
  
