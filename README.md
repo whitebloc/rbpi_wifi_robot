@@ -42,3 +42,5 @@ if tou want a security to the wireless network tou can edit /etc/hostapd/hostapd
  
 "# rbpi_wifi_robot: last update " 20/06/2019 18:43:12,76 . 
  
+"# rbpi_wifi_robot: last update " 22/06/2019 21:29:54,84 . 
+ 
