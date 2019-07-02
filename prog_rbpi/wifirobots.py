@@ -1,4 +1,4 @@
-﻿#coding:utf-8
+#coding:utf-8
 '''
 Raspberry Pi WiFi video robot car drive souce code
 Writer: liuviking
@@ -6,7 +6,6 @@ Copyright:XiaoR Geek Tech
 The code can be used free,but not for commerce purpose.
 All rights reserved, unauthorized use will be prosecuted by XiaoR Geek! 
 '''
-
 import os
 from socket import *
 from time import ctime
@@ -18,14 +17,22 @@ from smbus import SMBus
 import cv2
 import numpy as np
 from subprocess import call
-import serial
-
 XRservo = SMBus(1)
 print '....WIFIROBOTS START!!!...'
 global Path_Dect_px
 Path_Dect_px = 320
 global Path_Dect_on
 Path_Dect_on = 0
+#from serial import *
+import serial
+serialArduino = serial.Serial(port = '/dev/ttyACM0',baudrate = 38400, timeout = 0.1)
+##serialArduino.readline()
+##serialArduino.write()
+global PILE
+PILE = []
+
+
+
 #######################################
 #############Signal pin defination##############
 #######################################
@@ -37,53 +44,56 @@ LED1 = 9
 LED2 = 25
 
 ########Motor drive port defination#################
-ENA = 13	#//L298 Enable A 
-ENB = 20	#//L298 Enable B
-IN1 = 19	#//Motor port 1
-IN2 = 16	#//Motor port 2
-IN3 = 21	#//Motor port 3
-IN4 = 26	#//Motor port 4
+ENA = 13        #//L298 Enable A 
+ENB = 20        #//L298 Enable B
+IN1 = 19        #//Motor port 1
+IN2 = 16        #//Motor port 2
+IN3 = 21        #//Motor port 3
+IN4 = 26        #//Motor port 4
+
 ########Buzer port #########################
 BUZ = 10
 
 ########Servo port defination#################
 
 ########Ultrasonic port defination#################
-ECHO = 4	#Ultrasonic receiving foot position   
-TRIG = 17	#Ultrasonic sending foot position
+ECHO = 4        #Ultrasonic receiving foot position   
+TRIG = 17       #Ultrasonic sending foot position
 
 ########Infrared sensor port defination#################
-IR_R = 18	#Right line following infrared sensor
-IR_L = 27	#Left line following infrared sensor
-IR_M = 22	#Middle obstacle avoidance infrared sensor
-IRF_R = 23	#Right object tracking infrared sensror
-IRF_L = 24	#Left object tracking infrardd sensor
+IR_R = 18       #Right line following infrared sensor
+IR_L = 27       #Left line following infrared sensor
+IR_M = 22       #Middle obstacle avoidance infrared sensor
+IRF_R = 23      #Right object tracking infrared sensror
+IRF_L = 24      #Left object tracking infrardd sensor
+
 global Cruising_Flag
-Cruising_Flag = 0	#//Current circulation mode
+Cruising_Flag = 0       #//Current circulation mode
+
 global Pre_Cruising_Flag
-Pre_Cruising_Flag = 0 	#//Precycling mode
+Pre_Cruising_Flag = 0   #//Precycling mode
 
 global RevStatus
 RevStatus = 0
+
 global TurnAngle
 TurnAngle=0;
+
 global Golength
 Golength=0
+
 buffer = ['00','00','00','00','00','00']
+
 global motor_flag
 motor_flag=1
-
 
 global left_speed
 global right_speed
 global left_speed_hold
 global right_speed_hold
-
-
-
-
 left_speed=100
 right_speed=100
+
 #######################################
 #########Pin type setup and initialization##########
 #######################################
@@ -131,19 +141,26 @@ GPIO.setup(ECHO,GPIO.IN,pull_up_down=GPIO.PUD_UP)#ultrasonic module receiving en
 ##Entrance parameter ：none
 ##Exit parameter：none
 ####################################################
-def	Open_Light():#turn on headlight LED0
-	GPIO.output(LED0,False)#Headlight's anode to 5V, cathode to IO port
-	time.sleep(1)
-
+def     Open_Light():#turn on headlight LED0
+        s = []
+        GPIO.output(LED0,False)#Headlight's anode to 5V, cathode to IO port
+        ##read = serialArduino.readline()
+        PILE.append('LED("LIGHT")')
+        time.sleep(1)
 ####################################################
 ##Function name Close_Light()
 ##Function performance Close headlight
 ##Enterance parameter：none
 ##Exit parameter：none
 ####################################################
-def	Close_Light():#Close headlight
-	GPIO.output(LED0,True)#Headlight's anode to 5V, cathode to IO port
-	time.sleep(1)
+def     Close_Light():#Close headlight
+        s = []
+        GPIO.output(LED0,True)#Headlight's anode to 5V, cathode to IO port
+        ##read = serialArduino.readline()
+        #thread.start_new_Close_Light(Close_Light_arduino)
+        #time.sleep(1)
+        PILE.append('LED("DARK*")')
+        time.sleep(1)
 
 ####################################################
 ##Functin name Open_Buzer()
@@ -151,9 +168,9 @@ def	Close_Light():#Close headlight
 ##Entrance parameter ：none
 ##Exit parameter：none
 ####################################################
-def	Open_Buzer():#turn on headlight LED0
-	GPIO.output(BUZ,False)#Headlight's anode to 5V, cathode to IO port
-	time.sleep(1)
+def     Open_Buzer():#turn on headlight LED0
+        GPIO.output(BUZ,False)#Headlight's anode to 5V, cathode to IO port
+        time.sleep(1)
 
 ####################################################
 ##Function name Close_Buzer()
@@ -161,227 +178,230 @@ def	Open_Buzer():#turn on headlight LED0
 ##Enterance parameter：none
 ##Exit parameter：none
 ####################################################
-def	Close_Buzer():#Close headlight
-	GPIO.output(BUZ,True)#Headlight's anode to 5V, cathode to IO port
-	time.sleep(1)	
+def     Close_Buzer():#Close headlight
+        GPIO.output(BUZ,True)#Headlight's anode to 5V, cathode to IO port
+        time.sleep(1)   
 ####################################################
 ##Function name init_light()
 ##Function performance running light
 ##Enterance parameter：none
 ##Exit parameter：none
 ####################################################
-def	init_light():#running light
-	for i in range(1, 5):
-		GPIO.output(LED0,False)#running light LED0
-		GPIO.output(LED1,False)#running light LED1
-		GPIO.output(LED2,False)#running light LED2
-		time.sleep(0.5)
-		GPIO.output(LED0,True)#running light LED0
-		GPIO.output(LED1,False)#running light LED1
-		GPIO.output(LED2,False)#running light LED2
-		time.sleep(0.5)
-		GPIO.output(LED0,False)#running light LED0
-		GPIO.output(LED1,True)#running light LED1
-		GPIO.output(LED2,False)#running light LED2
-		time.sleep(0.5)
-		GPIO.output(LED0,False)#running light LED0
-		GPIO.output(LED1,False)#running light LED1
-		GPIO.output(LED2,True)#running light LED2
-		time.sleep(0.5)
-		GPIO.output(LED0,False)#running light LED0
-		GPIO.output(LED1,False)#running light LED1
-		GPIO.output(LED2,False)#running light LED2
-		time.sleep(0.5)
-		GPIO.output(LED0,True)#running light LED0
-		GPIO.output(LED1,True)#running light LED1
-		GPIO.output(LED2,True)#running light LED2
+def     init_light():#running light
+        for i in range(1, 5):
+                GPIO.output(LED0,False)#running light LED0
+                GPIO.output(LED1,False)#running light LED1
+                GPIO.output(LED2,False)#running light LED2
+                time.sleep(0.5)
+                GPIO.output(LED0,True)#running light LED0
+                GPIO.output(LED1,False)#running light LED1
+                GPIO.output(LED2,False)#running light LED2
+                time.sleep(0.5)
+                GPIO.output(LED0,False)#running light LED0
+                GPIO.output(LED1,True)#running light LED1
+                GPIO.output(LED2,False)#running light LED2
+                time.sleep(0.5)
+                GPIO.output(LED0,False)#running light LED0
+                GPIO.output(LED1,False)#running light LED1
+                GPIO.output(LED2,True)#running light LED2
+                time.sleep(0.5)
+                GPIO.output(LED0,False)#running light LED0
+                GPIO.output(LED1,False)#running light LED1
+                GPIO.output(LED2,False)#running light LED2
+                time.sleep(0.5)
+                GPIO.output(LED0,True)#running light LED0
+                GPIO.output(LED1,True)#running light LED1
+                GPIO.output(LED2,True)#running light LED2
 ##########Robot's direction control###########################
 def Motor_Forward():
-	print 'motor forward'
-	GPIO.output(ENA,True)
-	GPIO.output(ENB,True)
-	GPIO.output(IN1,True)
-	GPIO.output(IN2,False)
-	GPIO.output(IN3,True)
-	GPIO.output(IN4,False)
-	GPIO.output(LED1,False)#LED1 turn on
-	GPIO.output(LED2,False)#LED1 turn on
-	
+        print 'motor forward'
+        GPIO.output(ENA,True)
+        GPIO.output(ENB,True)
+        GPIO.output(IN1,False)
+        GPIO.output(IN2,True)
+        GPIO.output(IN3,False)
+        GPIO.output(IN4,True)
+        GPIO.output(LED1,True)#LED1 turn off
+        GPIO.output(LED2,False)#LED2 turn on
+        
 def Motor_Backward():
-	print 'motor_backward'
-	GPIO.output(ENA,True)
-	GPIO.output(ENB,True)
-	GPIO.output(IN1,False)
-	GPIO.output(IN2,True)
-	GPIO.output(IN3,False)
-	GPIO.output(IN4,True)
-	GPIO.output(LED1,True)#LED1 turn off
-	GPIO.output(LED2,False)#LED2 turn on
-	
+        print 'motor_backward'
+        GPIO.output(ENA,True)
+        GPIO.output(ENB,True)
+        GPIO.output(IN1,True)
+        GPIO.output(IN2,False)
+        GPIO.output(IN3,True)
+        GPIO.output(IN4,False)
+        GPIO.output(LED1,False)#LED1 turn on
+        GPIO.output(LED2,False)#LED1 turn on
+        
 def Motor_TurnLeft():
-	print 'motor_turnleft'
-	GPIO.output(ENA,True)
-	GPIO.output(ENB,True)
-	GPIO.output(IN1,True)
-	GPIO.output(IN2,False)
-	GPIO.output(IN3,False)
-	GPIO.output(IN4,True)
-	GPIO.output(LED1,False)#LED1 turn on 
-	GPIO.output(LED2,True) #LED2 tren off
+        print 'motor_turnleft'
+        GPIO.output(ENA,True)
+        GPIO.output(ENB,True)
+        GPIO.output(IN1,True)
+        GPIO.output(IN2,False)
+        GPIO.output(IN3,False)
+        GPIO.output(IN4,True)
+        GPIO.output(LED1,False)#LED1 turn on 
+        GPIO.output(LED2,True) #LED2 tren off
 def Motor_TurnRight():
-	print 'motor_turnright'
-	GPIO.output(ENA,True)
-	GPIO.output(ENB,True)
-	GPIO.output(IN1,False)
-	GPIO.output(IN2,True)
-	GPIO.output(IN3,True)
-	GPIO.output(IN4,False)
-	GPIO.output(LED1,False)#LED1 turn on
-	GPIO.output(LED2,True) #LED2 turn off
+        print 'motor_turnright'
+        GPIO.output(ENA,True)
+        GPIO.output(ENB,True)
+        GPIO.output(IN1,False)
+        GPIO.output(IN2,True)
+        GPIO.output(IN3,True)
+        GPIO.output(IN4,False)
+        GPIO.output(LED1,False)#LED1 turn on
+        GPIO.output(LED2,True) #LED2 turn off
 def Motor_Stop():
-	print 'motor_stop'
-	GPIO.output(ENA,False)
-	GPIO.output(ENB,False)
-	GPIO.output(IN1,False)
-	GPIO.output(IN2,False)
-	GPIO.output(IN3,False)
-	GPIO.output(IN4,False)
-	GPIO.output(LED1,True)#LED1 trun off
-	GPIO.output(LED2,True)#LED2 turn on
-	
+        print 'motor_stop'
+        GPIO.output(ENA,False)
+        GPIO.output(ENB,False)
+        GPIO.output(IN1,False)
+        GPIO.output(IN2,False)
+        GPIO.output(IN3,False)
+        GPIO.output(IN4,False)
+        GPIO.output(LED1,True)#LED1 trun off
+        GPIO.output(LED2,True)#LED2 turn on
+        
+        
 ##########Robot direction calibration (used in mode)###########################
 def forward():
-	global motor_flag
-	if motor_flag == 1:
-		Motor_Forward()
-	elif motor_flag == 2:
-		Motor_Forward()
-	elif motor_flag == 3:
-		Motor_Backward()
-	elif motor_flag == 4:
-		Motor_Backward()
-	elif motor_flag == 5:
-		Motor_TurnLeft()
-	elif motor_flag == 6:
-		Motor_TurnLeft()
-	elif motor_flag == 7:
-		Motor_TurnRight()
-	elif motor_flag == 8:
-		Motor_TurnRight()
+        global motor_flag
+        if motor_flag == 1:
+                Motor_Forward()
+        elif motor_flag == 2:
+                Motor_Forward()
+        elif motor_flag == 3:
+                Motor_Backward()
+        elif motor_flag == 4:
+                Motor_Backward()
+        elif motor_flag == 5:
+                Motor_TurnLeft()
+        elif motor_flag == 6:
+                Motor_TurnLeft()
+        elif motor_flag == 7:
+                Motor_TurnRight()
+        elif motor_flag == 8:
+                Motor_TurnRight()
 def back():
-	global motor_flag
-	if motor_flag == 1:
-		Motor_Backward()
-	elif motor_flag == 2:
-		Motor_Backward()
-	elif motor_flag == 3:
-		Motor_Forward()
-	elif motor_flag == 4:
-		Motor_Forward()
-	elif motor_flag == 5:
-		Motor_TurnRight()
-	elif motor_flag == 6:
-		Motor_TurnRight()
-	elif motor_flag == 7:
-		Motor_TurnLeft()
-	elif motor_flag == 8:
-		Motor_TurnLeft()
-		
+        global motor_flag
+        if motor_flag == 1:
+                Motor_Backward()
+        elif motor_flag == 2:
+                Motor_Backward()
+        elif motor_flag == 3:
+                Motor_Forward()
+        elif motor_flag == 4:
+                Motor_Forward()
+        elif motor_flag == 5:
+                Motor_TurnRight()
+        elif motor_flag == 6:
+                Motor_TurnRight()
+        elif motor_flag == 7:
+                Motor_TurnLeft()
+        elif motor_flag == 8:
+                Motor_TurnLeft()
+                
 def left():
-	global motor_flag
-	if motor_flag == 1:
-		Motor_TurnLeft()
-	elif motor_flag == 2:
-		Motor_TurnRight()
-	elif motor_flag == 3:
-		Motor_TurnLeft()
-	elif motor_flag == 4:
-		Motor_TurnRight()
-	elif motor_flag == 5:
-		Motor_Forward()
-	elif motor_flag == 6:
-		Motor_Backward()
-	elif motor_flag == 7:
-		Motor_Forward()
-	elif motor_flag == 8:
-		Motor_Backward()
+        global motor_flag
+        if motor_flag == 1:
+                Motor_TurnLeft()
+        elif motor_flag == 2:
+                Motor_TurnRight()
+        elif motor_flag == 3:
+                Motor_TurnLeft()
+        elif motor_flag == 4:
+                Motor_TurnRight()
+        elif motor_flag == 5:
+                Motor_Forward()
+        elif motor_flag == 6:
+                Motor_Backward()
+        elif motor_flag == 7:
+                Motor_Forward()
+        elif motor_flag == 8:
+                Motor_Backward()
 
 def right():
-	global motor_flag
-	if motor_flag == 1:
-		Motor_TurnRight()
-	elif motor_flag == 2:
-		Motor_TurnLeft()
-	elif motor_flag == 3:
-		Motor_TurnRight()
-	elif motor_flag == 4:
-		Motor_TurnLeft()
-	elif motor_flag == 5:
-		Motor_Backward()
-	elif motor_flag == 6:
-		Motor_Forward()
-	elif motor_flag == 7:
-		Motor_Backward()
-	elif motor_flag == 8:
-		Motor_Forward()
+        global motor_flag
+        if motor_flag == 1:
+                Motor_TurnRight()
+        elif motor_flag == 2:
+                Motor_TurnLeft()
+        elif motor_flag == 3:
+                Motor_TurnRight()
+        elif motor_flag == 4:
+                Motor_TurnLeft()
+        elif motor_flag == 5:
+                Motor_Backward()
+        elif motor_flag == 6:
+                Motor_Forward()
+        elif motor_flag == 7:
+                Motor_Backward()
+        elif motor_flag == 8:
+                Motor_Forward()
 
 ##########Robot's speed control###########################
 def ENA_Speed(EA_num):
-	global left_speed
-	left_speed=EA_num
-	print 'EA_A改变啦 %d '%EA_num
-	ENA_pwm.ChangeDutyCycle(EA_num)
+        global left_speed
+        left_speed=EA_num
+        print 'EA_A改变啦 %d '%EA_num
+        ENA_pwm.ChangeDutyCycle(EA_num)
 
 def ENB_Speed(EB_num):
-	global right_speed
-	right_speed=EB_num
-	print 'EB_B改变啦 %d '%EB_num
-	ENB_pwm.ChangeDutyCycle(EB_num)
+        global right_speed
+        right_speed=EB_num
+        print 'EB_B改变啦 %d '%EB_num
+        ENB_pwm.ChangeDutyCycle(EB_num)
 ##Function performance ：servo control function
 ##Entrance parameter ：ServoNum(servo number)，angle_from_protocol(servo angle)
 ##Exit parameter：none
 ####################################################
 def Angle_cal(angle_from_protocol):
-	angle=hex(eval('0x'+angle_from_protocol))
-	angle=int(angle,16)
-	if angle > 160:
-		angle=160
-	elif angle < 15:
-		angle=15
-	return angle
-	
+        angle=hex(eval('0x'+angle_from_protocol))
+        angle=int(angle,16)
+        if angle > 160:
+                angle=160
+        elif angle < 15:
+                angle=15
+        return angle
+        
 def SetServoAngle(ServoNum,angle_from_protocol):
-	GPIO.output(LED1,True)
-	GPIO.output(LED2,False)
-	time.sleep(0.01)
-	GPIO.output(LED1,True)
-	GPIO.output(LED2,True)
-	if ServoNum== 1:
-		XRservo.XiaoRGEEK_SetServo(0x01,Angle_cal(angle_from_protocol))
-		return
-	elif ServoNum== 2:
-		XRservo.XiaoRGEEK_SetServo(0x02,Angle_cal(angle_from_protocol))
-		return
-	elif ServoNum== 3:
-		XRservo.XiaoRGEEK_SetServo(0x03,Angle_cal(angle_from_protocol))
-		return
-	elif ServoNum== 4:
-		XRservo.XiaoRGEEK_SetServo(0x04,Angle_cal(angle_from_protocol))
-		return
-	elif ServoNum== 5:
-		XRservo.XiaoRGEEK_SetServo(0x05,Angle_cal(angle_from_protocol))
-		return
-	elif ServoNum== 6:
-		XRservo.XiaoRGEEK_SetServo(0x06,Angle_cal(angle_from_protocol))
-		return
-	elif ServoNum== 7:
-		XRservo.XiaoRGEEK_SetServo(0x07,Angle_cal(angle_from_protocol))
-		return
-	elif ServoNum== 8:
-		XRservo.XiaoRGEEK_SetServo(0x08,Angle_cal(angle_from_protocol))
-		return
-	else:
-		return
+        GPIO.output(LED0,True)
+        GPIO.output(LED1,True)
+        GPIO.output(LED2,False)
+        time.sleep(0.01)
+        GPIO.output(LED0,True)
+        GPIO.output(LED1,True)
+        GPIO.output(LED2,True)
+        if ServoNum== 1:
+                XRservo.XiaoRGEEK_SetServo(0x01,Angle_cal(angle_from_protocol))
+                return
+        elif ServoNum== 2:
+                XRservo.XiaoRGEEK_SetServo(0x02,Angle_cal(angle_from_protocol))
+                return
+        elif ServoNum== 3:
+                XRservo.XiaoRGEEK_SetServo(0x03,Angle_cal(angle_from_protocol))
+                return
+        elif ServoNum== 4:
+                XRservo.XiaoRGEEK_SetServo(0x04,Angle_cal(angle_from_protocol))
+                return
+        elif ServoNum== 5:
+                XRservo.XiaoRGEEK_SetServo(0x05,Angle_cal(angle_from_protocol))
+                return
+        elif ServoNum== 6:
+                XRservo.XiaoRGEEK_SetServo(0x06,Angle_cal(angle_from_protocol))
+                return
+        elif ServoNum== 7:
+                XRservo.XiaoRGEEK_SetServo(0x07,Angle_cal(angle_from_protocol))
+                return
+        elif ServoNum== 8:
+                XRservo.XiaoRGEEK_SetServo(0x08,Angle_cal(angle_from_protocol))
+                return
+        else:
+                return
 
 
 
@@ -392,11 +412,11 @@ def SetServoAngle(ServoNum,angle_from_protocol):
 ##Entrance parameter ：none
 ##Exit parameter ：none
 ####################################################
-def	Avoiding(): #infrared obstacle avoidance
-	if GPIO.input(IR_M) == False:
-		Motor_Stop()
-		time.sleep(0.1)
-		return
+def     Avoiding(): #infrared obstacle avoidance
+        if GPIO.input(IR_M) == False:
+                Motor_Stop()
+                time.sleep(0.1)
+                return
 
 ####################################################
 ##Function name TrackLine()
@@ -405,18 +425,18 @@ def	Avoiding(): #infrared obstacle avoidance
 ##Exit parameter：none
 ####################################################
 def TrackLine():
-	if (GPIO.input(IR_L) == False)&(GPIO.input(IR_R) == False): #Black line is high, ground is low
-		forward()
-		return
-	elif (GPIO.input(IR_L) == False)&(GPIO.input(IR_R) == True):
-		right()
-		return
-	elif (GPIO.input(IR_L) == True)&(GPIO.input(IR_R) == False):
-		left()
-		return
-	elif (GPIO.input(IR_L) == True)&(GPIO.input(IR_R) == True): #Both sides touch black line
-		Motor_Stop()
-		return
+        if (GPIO.input(IR_L) == False)&(GPIO.input(IR_R) == False): #Black line is high, ground is low
+                forward()
+                return
+        elif (GPIO.input(IR_L) == False)&(GPIO.input(IR_R) == True):
+                right()
+                return
+        elif (GPIO.input(IR_L) == True)&(GPIO.input(IR_R) == False):
+                left()
+                return
+        elif (GPIO.input(IR_L) == True)&(GPIO.input(IR_R) == True): #Both sides touch black line
+                Motor_Stop()
+                return
 
 ####################################################
 ##Function name Follow()
@@ -425,17 +445,17 @@ def TrackLine():
 ##Exit parameter：none
 ####################################################
 def Follow(): 
-	if(GPIO.input(IR_M) == True): #Middle sensor is OK
-		if(GPIO.input(IRF_L) == False)&(GPIO.input(IRF_R) == False):	#Both sides detected obstacles at the same time
-			Motor_Stop()			#stop
-		if(GPIO.input(IRF_L) == False)&(GPIO.input(IRF_R) == True):   #Left sides detected obstacles
-			right()		#turn right
-		if(GPIO.input(IRF_L) == True)& (GPIO.input(IRF_R) == False):  #Right sides detected obstacles
-			left()		#turn left
-		if(GPIO.input(IRF_L) == True)& (GPIO.input(IRF_R) == True):   #Did not detect obstacles
-			forward()			#straight
-	else:
-		Motor_Stop()
+        if(GPIO.input(IR_M) == True): #Middle sensor is OK
+                if(GPIO.input(IRF_L) == False)&(GPIO.input(IRF_R) == False):    #Both sides detected obstacles at the same time
+                        Motor_Stop()                    #stop
+                if(GPIO.input(IRF_L) == False)&(GPIO.input(IRF_R) == True):   #Left sides detected obstacles
+                        right()         #turn right
+                if(GPIO.input(IRF_L) == True)& (GPIO.input(IRF_R) == False):  #Right sides detected obstacles
+                        left()          #turn left
+                if(GPIO.input(IRF_L) == True)& (GPIO.input(IRF_R) == True):   #Did not detect obstacles
+                        forward()                       #straight
+        else:
+                Motor_Stop()
 
 
 ####################################################
@@ -444,19 +464,19 @@ def Follow():
 ##Entrance parameter：none
 ##Exit parameter：none
 ####################################################
-def	Get_Distence():
-	time.sleep(0.1)
-	GPIO.output(TRIG,GPIO.HIGH)
-	time.sleep(0.000015)
-	GPIO.output(TRIG,GPIO.LOW)
-	while not GPIO.input(ECHO):
-				pass
-	t1 = time.time()
-	while GPIO.input(ECHO):
-				pass
-	t2 = time.time()
-	time.sleep(0.1)
-	return (t2-t1)*340/2*100
+def     Get_Distence():
+        time.sleep(0.1)
+        GPIO.output(TRIG,GPIO.HIGH)
+        time.sleep(0.000015)
+        GPIO.output(TRIG,GPIO.LOW)
+        while not GPIO.input(ECHO):
+                                pass
+        t1 = time.time()
+        while GPIO.input(ECHO):
+                                pass
+        t2 = time.time()
+        time.sleep(0.1)
+        return (t2-t1)*340/2*100
 
 ####################################################
 ##Function name AvoidByRadar()
@@ -464,20 +484,20 @@ def	Get_Distence():
 ##Entrance parameter ：none
 ##Exit parameter ：none
 ####################################################
-def	AvoidByRadar(distance):
-	dis = int(Get_Distence())
-	if(distance<20):
-		distance = 20					#The minimum obstacle avoidance distance is 20cm
-	if((dis>1)&(dis < distance)):		#Obstacle distance value (in cm), greater than 1 is to avoid the blind spot of ultrasound
-		Motor_Stop()
-	
-		
-def	Avoid_wave():
-	dis = Get_Distence()
-	if dis<20:
-		Motor_Stop()
-	else:
-		forward()
+def     AvoidByRadar(distance):
+        dis = int(Get_Distence())
+        if(distance<20):
+                distance = 20                                   #The minimum obstacle avoidance distance is 20cm
+        if((dis>1)&(dis < distance)):           #Obstacle distance value (in cm), greater than 1 is to avoid the blind spot of ultrasound
+                Motor_Stop()
+        
+                
+def     Avoid_wave():
+        dis = Get_Distence()
+        if dis<20:
+                Motor_Stop()
+        else:
+                forward()
 
 ####################################################
 ##Function name
@@ -486,188 +506,188 @@ def	Avoid_wave():
 ##Exit parameter：none
 ####################################################
 def Route():
-	global RevStatus
-	global TurnAngle
-	global Golength
-	global left_speed
-	global right_speed
-	global left_speed_hold
-	global right_speed_hold
-	while RevStatus !=0 :
-		print 'RevStatus==== %d ' %RevStatus
-		TurnA=float(TurnAngle*6)/1000
-		Golen=float(Golength*10)/1000
-		print 'TurnAngle====== %f ' %TurnA
-		print 'Golength======= %f ' %Golen
-		#ENA_Speed(85)
-		#ENB_Speed(85)
-		if RevStatus==1:
-			left()
-			time.sleep(TurnA)
-			Motor_Stop()
-			forward()
-			time.sleep(Golen)
-			Motor_Stop()
-			RevStatus = 0
-			tcpCliSock.send("\xFF")
-			time.sleep(0.005)
-			tcpCliSock.send("\xA8")
-			time.sleep(0.005)
-			tcpCliSock.send("\x00")
-			time.sleep(0.005)
-			tcpCliSock.send("\x00")
-			time.sleep(0.005)
-			tcpCliSock.send("\xFF")
-			time.sleep(0.01)
-		elif RevStatus==2:
-			right()
-			time.sleep(TurnA)
-			Motor_Stop()
-			forward()
-			time.sleep(Golen)
-			Motor_Stop()
-			RevStatus = 0
-			tcpCliSock.send("\xFF")
-			time.sleep(0.005)
-			tcpCliSock.send("\xA8")
-			time.sleep(0.005)
-			tcpCliSock.send("\x00")
-			time.sleep(0.005)
-			tcpCliSock.send("\x00")
-			time.sleep(0.005)
-			tcpCliSock.send("\xFF")
-			time.sleep(0.01)
-		#ENA_Speed(left_speed_hold)
-		#ENB_Speed(right_speed_hold)
+        global RevStatus
+        global TurnAngle
+        global Golength
+        global left_speed
+        global right_speed
+        global left_speed_hold
+        global right_speed_hold
+        while RevStatus !=0 :
+                print 'RevStatus==== %d ' %RevStatus
+                TurnA=float(TurnAngle*6)/1000
+                Golen=float(Golength*10)/1000
+                print 'TurnAngle====== %f ' %TurnA
+                print 'Golength======= %f ' %Golen
+                #ENA_Speed(85)
+                #ENB_Speed(85)
+                if RevStatus==1:
+                        left()
+                        time.sleep(TurnA)
+                        Motor_Stop()
+                        forward()
+                        time.sleep(Golen)
+                        Motor_Stop()
+                        RevStatus = 0
+                        tcpCliSock.send("\xFF")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\xA8")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\x00")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\x00")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\xFF")
+                        time.sleep(0.01)
+                elif RevStatus==2:
+                        right()
+                        time.sleep(TurnA)
+                        Motor_Stop()
+                        forward()
+                        time.sleep(Golen)
+                        Motor_Stop()
+                        RevStatus = 0
+                        tcpCliSock.send("\xFF")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\xA8")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\x00")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\x00")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\xFF")
+                        time.sleep(0.01)
+                #ENA_Speed(left_speed_hold)
+                #ENB_Speed(right_speed_hold)
 ####################################################
 ##Function name Send_Distance()
 ##Function performance：ultrasonic distance PC terminal display
-##Entrance parameter：none			
+##Entrance parameter：none                       
 ##Exit parameter：none
 ####################################################
-def	Send_Distance():
-	dis_send = int(Get_Distence())
-	#dis_send = str("%.2f"%dis_send)
-	if dis_send < 255:
-		print 'Distance: %d cm' %dis_send
-		tcpCliSock.send("\xFF")
-		time.sleep(0.005)
-		tcpCliSock.send("\x03")
-		time.sleep(0.005)
-		tcpCliSock.send("\x00")
-		time.sleep(0.005)
-		tcpCliSock.send(chr(dis_send))
-		time.sleep(0.005)
-		tcpCliSock.send("\xFF")
-		time.sleep(0.1)
+def     Send_Distance():
+        dis_send = int(Get_Distence())
+        #dis_send = str("%.2f"%dis_send)
+        if dis_send < 255:
+                print 'Distance: %d cm' %dis_send
+                tcpCliSock.send("\xFF")
+                time.sleep(0.005)
+                tcpCliSock.send("\x03")
+                time.sleep(0.005)
+                tcpCliSock.send("\x00")
+                time.sleep(0.005)
+                tcpCliSock.send(chr(dis_send))
+                time.sleep(0.005)
+                tcpCliSock.send("\xFF")
+                time.sleep(0.1)
 
 
 ####################################################
 ##Function name Cruising_Mod()
 ##Function performance ：Mode change function
-##Entrance parameter：none			
+##Entrance parameter：none                       
 ##Exit parameter：none
 ####################################################
-def	Cruising_Mod(func):
-	#print 'into Cruising_Mod-01'
-	global Pre_Cruising_Flag
-	print 'Pre_Cruising_Flag %d '%Pre_Cruising_Flag
-	
-	global Cruising_Flag
-	#print 'Cruising_Flag %d '%Cruising_Flag
-	while True:
-		if (Pre_Cruising_Flag != Cruising_Flag):			
-			if (Pre_Cruising_Flag != 0):
-				Motor_Stop()
-			Pre_Cruising_Flag = Cruising_Flag
-			#print 'Pre_Cruising_Flag = Cruising_Flag == 0'
-		if(Cruising_Flag == 1):		#infrared follow
-			Follow()
-		elif (Cruising_Flag == 2):	#infrared trackline
-			TrackLine()
-		elif (Cruising_Flag == 3):	#infrared obstacle avoidance
-			Avoiding()
-		elif (Cruising_Flag == 4):	#ultrasonic obstacle avoidance##
-			Avoid_wave()
-		elif (Cruising_Flag == 5):	#ultrasonic distance PC terminal display
-			Send_Distance()
-		elif (Cruising_Flag == 6):	#ultrasonic obstacle avoidance 
-			AvoidByRadar(15)
-		elif (Cruising_Flag == 7):
-			Route()
-		elif (Cruising_Flag == 8):	#Exit camera tracking or enter debug mode
-			time.sleep(3)
-			#os.system('sh start_mjpg_streamer.sh')
-			call("sh start_mjpg_streamer.sh &",shell=True)
-			Cruising_Flag = 0
-		elif (Cruising_Flag == 9):	#Enter the camera tracking
-			Path_Dect()
-		elif (Cruising_Flag == 0):
-			RevStatus=0
-		else:
-			time.sleep(0.001)
-		time.sleep(0.001)
+def     Cruising_Mod(func):
+        #print 'into Cruising_Mod-01'
+        global Pre_Cruising_Flag
+        print 'Pre_Cruising_Flag %d '%Pre_Cruising_Flag
+        
+        global Cruising_Flag
+        #print 'Cruising_Flag %d '%Cruising_Flag
+        while True:
+                if (Pre_Cruising_Flag != Cruising_Flag):                        
+                        if (Pre_Cruising_Flag != 0):
+                                Motor_Stop()
+                        Pre_Cruising_Flag = Cruising_Flag
+                        #print 'Pre_Cruising_Flag = Cruising_Flag == 0'
+                if(Cruising_Flag == 1):         #infrared follow
+                        Follow()
+                elif (Cruising_Flag == 2):      #infrared trackline
+                        TrackLine()
+                elif (Cruising_Flag == 3):      #infrared obstacle avoidance
+                        Avoiding()
+                elif (Cruising_Flag == 4):      #ultrasonic obstacle avoidance##
+                        Avoid_wave()
+                elif (Cruising_Flag == 5):      #ultrasonic distance PC terminal display
+                        Send_Distance()
+                elif (Cruising_Flag == 6):      #ultrasonic obstacle avoidance 
+                        AvoidByRadar(15)
+                elif (Cruising_Flag == 7):
+                        Route()
+                elif (Cruising_Flag == 8):      #Exit camera tracking or enter debug mode
+                        time.sleep(3)
+                        #os.system('sh start_mjpg_streamer.sh')
+                        call("sh start_mjpg_streamer.sh &",shell=True)
+                        Cruising_Flag = 0
+                elif (Cruising_Flag == 9):      #Enter the camera tracking
+                        Path_Dect()
+                elif (Cruising_Flag == 0):
+                        RevStatus=0
+                else:
+                        time.sleep(0.001)
+                time.sleep(0.001)
 ####################################################
 ##Function name Path_Dect()
 ##Function performance：Mode change function
 ##Entrance paramete ：FF130800FF，camera debug，FF130801FF start camera tracking
 ##Exit parameter  
-#int Path_Dect_px 	Average pixel coordinates
-#int Path_Dect_on	1:start to track，0 stop tracking
+#int Path_Dect_px       Average pixel coordinates
+#int Path_Dect_on       1:start to track，0 stop tracking
 ####################################################
-def	Path_Dect():
-	global Path_Dect_px
-	global Path_Dect_on
-	while (Path_Dect_on):
-		if Path_Dect_px < 260:
-			print("turn left")
-			Motor_TurnLeft()
-		elif Path_Dect_px> 420:
-			print("turn right")
-			Motor_TurnRight()
-		else :
-			print("go stright")
-			Motor_Forward()
-		time.sleep(0.007)
-		Motor_Stop()
-		time.sleep(0.006)
+def     Path_Dect():
+        global Path_Dect_px
+        global Path_Dect_on
+        while (Path_Dect_on):
+                if Path_Dect_px < 260:
+                        print("turn left")
+                        Motor_TurnLeft()
+                elif Path_Dect_px> 420:
+                        print("turn right")
+                        Motor_TurnRight()
+                else :
+                        print("go stright")
+                        Motor_Forward()
+                time.sleep(0.007)
+                Motor_Stop()
+                time.sleep(0.006)
 ####################################################
 ##Function name Path_Dect_img_processing()
 ##Function performance ：Mode change function
 ##Entrance parameter  ：FF130800FF，camera debug，FF130801FF start camera tracking
 ##Exit parameter 
-#int Path_Dect_px 	Average pixel coordinates
-#int Path_Dect_on	1:start to track，0 debug mode/stop tracking
+#int Path_Dect_px       Average pixel coordinates
+#int Path_Dect_on       1:start to track，0 debug mode/stop tracking
 ####################################################
-def	Path_Dect_img_processing(func):
-	global Path_Dect_px
-	global Path_Dect_on
-	Path_Dect_fre_count = 0
-	Path_Dect_px_sum = 0
-	Path_Dect_cap = 0
-	print("into theads Path_Dect_img_processing")
-	while True:
-		if(Path_Dect_on):
-			if(Path_Dect_cap == 0):
-				cap = cv2.VideoCapture(0)
-				Path_Dect_cap = 1
-			else:
-				Path_Dect_fre_count+=1
-				ret,frame = cap.read()	#capture frame_by_frame
-				gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY) #get gray img
-				ret,thresh1=cv2.threshold(gray,70,255,cv2.THRESH_BINARY)	#binaryzation 
-				for j in range(0,640,5):
-					if thresh1[240,j] == 0:
-						Path_Dect_px_sum = Path_Dect_px_sum + j
-				Path_Dect_px = Path_Dect_px_sum>>5
-				Path_Dect_px_sum = 0
-				Path_Dect_fre_count = 0
-		elif(Path_Dect_cap):
-			Motor_Stop()
-			time.sleep(0.001)
-			Path_Dect_cap = 0
-			cap.relese()
-		time.sleep(0.1)
+def     Path_Dect_img_processing(func):
+        global Path_Dect_px
+        global Path_Dect_on
+        Path_Dect_fre_count = 0
+        Path_Dect_px_sum = 0
+        Path_Dect_cap = 0
+        print("into theads Path_Dect_img_processing")
+        while True:
+                if(Path_Dect_on):
+                        if(Path_Dect_cap == 0):
+                                cap = cv2.VideoCapture(0)
+                                Path_Dect_cap = 1
+                        else:
+                                Path_Dect_fre_count+=1
+                                ret,frame = cap.read()  #capture frame_by_frame
+                                gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY) #get gray img
+                                ret,thresh1=cv2.threshold(gray,70,255,cv2.THRESH_BINARY)        #binaryzation 
+                                for j in range(0,640,5):
+                                        if thresh1[240,j] == 0:
+                                                Path_Dect_px_sum = Path_Dect_px_sum + j
+                                Path_Dect_px = Path_Dect_px_sum>>5
+                                Path_Dect_px_sum = 0
+                                Path_Dect_fre_count = 0
+                elif(Path_Dect_cap):
+                        Motor_Stop()
+                        time.sleep(0.001)
+                        Path_Dect_cap = 0
+                        cap.relese()
+                time.sleep(0.1)
 ####################################################
 ##Function name  Communication_Decode()
 ##Function performance：Communication protocol decoding  
@@ -675,188 +695,305 @@ def	Path_Dect_img_processing(func):
 ##Exit parameter：none
 ####################################################    
 def Communication_Decode():
-	global RevStatus
-	global TurnAngle
-	global Golength
-	global Pre_Cruising_Flag
-	global Cruising_Flag
-	global motor_flag
-	global left_speed
-	global right_speed
-	global left_speed_hold
-	global right_speed_hold
-	global Path_Dect_on
-	print 'Communication_decoding...'
-	if buffer[0]=='00':
-		if buffer[1]=='01':				#forward
-			Motor_Forward()
-		elif buffer[1]=='02':			#backword
-			Motor_Backward()
-		elif buffer[1]=='03':			#turn left
-			Motor_TurnLeft()
-		elif buffer[1]=='04':			#turn right
-			Motor_TurnRight()
-		elif buffer[1]=='00':			#stop
-			Motor_Stop()
-		else:
-			Motor_Stop()
-	elif buffer[0]=='02':
-		if buffer[1]=='01':#left side speed
-			speed=hex(eval('0x'+buffer[2]))
-			speed=int(speed,16)
-			ENA_Speed(speed)
-		elif buffer[1]=='02':#right side speed
-			speed=hex(eval('0x'+buffer[2]))
-			speed=int(speed,16)
-			ENB_Speed(speed)
-	elif buffer[0]=='01':
-		if buffer[1]=='01':#1 servo drive
-			SetServoAngle(1,buffer[2])
-		elif buffer[1]=='02':#2 servo drive
-			SetServoAngle(2,buffer[2])
-		elif buffer[1]=='03':#3 servo drive
-			SetServoAngle(3,buffer[2])
-		elif buffer[1]=='04':#4 servo drive
-			SetServoAngle(4,buffer[2])
-		elif buffer[1]=='05':#5 servo drive
-			SetServoAngle(5,buffer[2])
-		elif buffer[1]=='06':#6 servo drive
-			SetServoAngle(6,buffer[2])
-		elif buffer[1]=='07':#7servo drive
-			SetServoAngle(7,buffer[2])
-		elif buffer[1]=='08':#8 servo drive
-			SetServoAngle(8,buffer[2])
-		else:
-			print '舵机角度大于170'
-	elif buffer[0]=='13':
-		if buffer[1]=='01':
-			Cruising_Flag = 1#Enter infrared follow mode
-			print 'Cruising_Flag红外跟随模式 %d '%Cruising_Flag
-		elif buffer[1]=='02':#Enter infrared trackline mode
-			Cruising_Flag = 2
-			print 'Cruising_Flag红外巡线模式 %d '%Cruising_Flag
-		elif buffer[1]=='03':#Enter infrared obstacle avoidance mode
-			Cruising_Flag = 3
-			print 'Cruising_Flag红外避障模式 %d '%Cruising_Flag
-		elif buffer[1]=='04':#Enter infrared obstacle avoidance
-			Cruising_Flag = 4
-			print 'Cruising_Flag超声波壁障 %d '%Cruising_Flag
-		elif buffer[1]=='05':#Enter ultrasonic distance PC terminal display
-			Cruising_Flag = 5
-			print 'Cruising_Flag超声波距离PC显示 %d '%Cruising_Flag
-		elif buffer[1]=='06':
-			Cruising_Flag = 6
-			print 'Cruising_Flag超声波遥控壁障 %d '%Cruising_Flag
-		elif buffer[1]=='07':
-			left_speed_hold=left_speed
-			right_speed_hold=right_speed
-			tcpCliSock.send("\xFF")
-			time.sleep(0.005)
-			tcpCliSock.send("\xA8")
-			time.sleep(0.005)
-			tcpCliSock.send("\x00")
-			time.sleep(0.005)
-			tcpCliSock.send("\x00")
-			time.sleep(0.005)
-			tcpCliSock.send("\xFF")
-			time.sleep(0.005)
-			Cruising_Flag = 7
-		elif buffer[1]=='08':
-			if buffer[2]=='00':#Path_Dect 调试模式
-				Path_Dect_on = 0
-				Cruising_Flag = 8
-				print 'Cruising_Flag Path_Dect调试模式 %d '%Cruising_Flag
-				#os.system('sh start_mjpg_streamer.sh')
-			elif buffer[2]=='01':#Path_Dect 循迹模式
-				#os.system('sh stop_mjpg_streamer.sh')
-				call("sh stop_mjpg_streamer.sh &",shell=True)
-				time.sleep(2)
-				Path_Dect_on = 1
-				Cruising_Flag = 9
-				print 'Cruising_Flag Path_Dect循迹模式 %d '%Cruising_Flag
-		elif buffer[1]=='00':
-			RevStatus=0
-			Cruising_Flag = 0
-			print 'Cruising_Flag正常模式 %d '%Cruising_Flag
-		#else:
-			#Cruising_Flag = 0def send_angle(angle) : 
-	elif buffer[0]=='a0':
-		RevStatus=2
-		Tangle=hex(eval('0x'+buffer[1]))
-		Tangle=int(Tangle,16)
-		TurnAngle=Tangle
-		Golen=hex(eval('0x'+buffer[2]))
-		Golen=int(Golen,16)
-		Golength=Golen
-	elif buffer[0]=='a1':
-		RevStatus=1
-		Tangle=hex(eval('0x'+buffer[1]))
-		Tangle=int(Tangle,16)
-		TurnAngle=Tangle
-		Golen=hex(eval('0x'+buffer[2]))
-		Golen=int(Golen,16)
-		Golength=Golen
-	elif buffer[0]=='40':
-		temp=hex(eval('0x'+buffer[1]))
-		temp=int(temp,16)
-		print 'mode_flag====== %d '%temp
-		motor_flag=temp
-	elif buffer[0]=='32':		
-		XRservo.XiaoRGEEK_SaveServo()
-	elif buffer[0]=='33':		
-		XRservo.XiaoRGEEK_ReSetServo()
-	elif buffer[0]=='04':		#Switch mode FF040000FF turn on  FF040100FF turn off
-		if buffer[1]=='00':
-			Open_Light()
-		elif buffer[1]=='01':
-			Close_Light()
-		else:
-			print 'error1 command!'
-	elif buffer[0]=='05':		#Read Voltage FF050000FF
-		if buffer[1]=='00':
-			Vol = XRservo.XiaoRGEEK_ReadVol()
-			print 'Read_Voltage %d '%Vol
-		else:
-			print 'error2 command!'
-	elif buffer[0]=='06':		#Read pluse FF060000FF read 1 pluse  FF060100FF read 2 pluse
-		if buffer[1]=='00':
-			Speed1 = XRservo.XiaoRGEEK_SpeedCounter1()
-			print 'Read_Voltage %d '%Speed1
-		elif buffer[1]=='01':
-			Speed2 = XRservo.XiaoRGEEK_SpeedCounter2()
-			print 'Read_Voltage %d '%Speed2
-		else:
-			print 'error3 command!'
-	elif buffer[0]=='09':		#Switch mode FF040000FF turn on  FF040100FF turn off
-		if buffer[1]=='00':
-			Open_Buzer()
-		elif buffer[1]=='01':
-			Close_Buzer()
-		else:
-			print 'error1 command!'
-	else:
-		print 'error4 command!'
+        s = []
+        global RevStatus
+        global TurnAngle
+        global Golength
+        global Pre_Cruising_Flag
+        global Cruising_Flag
+        global motor_flag
+        global left_speed
+        global right_speed
+        global left_speed_hold
+        global right_speed_hold
+        global Path_Dect_on
+        print 'Communication_decoding...'
+        if buffer[0]=='00':
+                if buffer[1]=='01':                             #forward
+                        #LEDr = LED("FORWA", use)
+                        PILE.append('LED("FORWA")')
+                        #PILE_b = PILE_A(PILE)
+                        #PILE_b.start
+                        #LEDr.start()
+                        Motor_Forward()
+                                
+                elif buffer[1]=='02':                   #backward
+                         #LEDr = LED("BACKW", use)
+                        #LEDr.start()
+                        PILE.append('LED("BACKW")')
+                        #PILE_b = PILE_A(PILE)
+                        #PILE_b.start
+                        Motor_Backward()
+                                
+                elif buffer[1]=='03': #turn left
+                        #LEDr = LED("LEFT*", use)
+                        #LEDr.start()
+                        PILE.append('LED("LEFT*")')
+                        #PILE_b = PILE_A(PILE)
+                        #PILE_b.start
+                        Motor_TurnLeft()
+                elif buffer[1]=='04':                   #turn right
+                        #LEDr = LED("RIGHT"e)
+                        #LEDr.start()
+                        PILE.append('LED("RIGHT")')
+                        #PILE_b = PILE_A(PILE)
+                        #PILE_b.start
+                        Motor_TurnRight()
+                elif buffer[1]=='00':                   #stop
+                        #LEDr = LED("BRAKE", use)
+                        #LEDr.start()
+                        PILE.append('LED("BRAKE")')
+                        #PILE_b = PILE_A(PILE)
+                        #PILE_b.start
+                        Motor_Stop()
+                else:
+                        #LEDr = LED("BRAKE", use)
+                        #LEDr.start()
+                        PILE.append('LED("BRAKE")')
+                        #PILE_b = PILE_A(PILE)
+                        #PILE_b.start
+                        Motor_Stop()
+        elif buffer[0]=='02':
+                if buffer[1]=='01':#left side speed
+                        speed=hex(eval('0x'+buffer[2]))
+                        speed=int(speed,16)
+                        ENA_Speed(speed)
+                elif buffer[1]=='02':#right side speed
+                        speed=hex(eval('0x'+buffer[2]))
+                        speed=int(speed,16)
+                        ENB_Speed(speed)
+        elif buffer[0]=='01':
+                if buffer[1]=='01':#1 servo drive
+                        SetServoAngle(1,buffer[2])
+                elif buffer[1]=='02':#2 servo drive
+                        SetServoAngle(2,buffer[2])
+                elif buffer[1]=='03':#3 servo drive
+                        SetServoAngle(3,buffer[2])
+                elif buffer[1]=='04':#4 servo drive
+                        SetServoAngle(4,buffer[2])
+                elif buffer[1]=='05':#5 servo drive
+                        SetServoAngle(5,buffer[2])
+                elif buffer[1]=='06':#6 servo drive
+                        SetServoAngle(6,buffer[2])
+                elif buffer[1]=='07':#7servo drive
+                        SetServoAngle(7,buffer[2])
+                elif buffer[1]=='08':#8 servo drive
+                        SetServoAngle(8,buffer[2])
+                else:
+                        print '舵机角度大于170'
+        elif buffer[0]=='13':
+                if buffer[1]=='01':
+                        Cruising_Flag = 1#Enter infrared follow mode
+                        print 'Cruising_Flag红外跟随模式 %d '%Cruising_Flag
+                elif buffer[1]=='02':#Enter infrared trackline mode
+                        Cruising_Flag = 2
+                        print 'Cruising_Flag红外巡线模式 %d '%Cruising_Flag
+                elif buffer[1]=='03':#Enter infrared obstacle avoidance mode
+                        Cruising_Flag = 3
+                        print 'Cruising_Flag红外避障模式 %d '%Cruising_Flag
+                elif buffer[1]=='04':#Enter infrared obstacle avoidance
+                        Cruising_Flag = 4
+                        print 'Cruising_Flag超声波壁障 %d '%Cruising_Flag
+                elif buffer[1]=='05':#Enter ultrasonic distance PC terminal display
+                        Cruising_Flag = 5
+                        print 'Cruising_Flag超声波距离PC显示 %d '%Cruising_Flag
+                elif buffer[1]=='06':
+                        Cruising_Flag = 6
+                        print 'Cruising_Flag超声波遥控壁障 %d '%Cruising_Flag
+                elif buffer[1]=='07':
+                        left_speed_hold=left_speed
+                        right_speed_hold=right_speed
+                        tcpCliSock.send("\xFF")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\xA8")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\x00")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\x00")
+                        time.sleep(0.005)
+                        tcpCliSock.send("\xFF")
+                        time.sleep(0.005)
+                        Cruising_Flag = 7
+                elif buffer[1]=='08':
+                        if buffer[2]=='00':#Path_Dect 调试模式
+                                Path_Dect_on = 0
+                                Cruising_Flag = 8
+                                print 'Cruising_Flag Path_Dect调试模式 %d '%Cruising_Flag
+                                #os.system('sh start_mjpg_streamer.sh')
+                        elif buffer[2]=='01':#Path_Dect 循迹模式
+                                #os.system('sh stop_mjpg_streamer.sh')
+                                call("sh stop_mjpg_streamer.sh &",shell=True)
+                                time.sleep(2)
+                                Path_Dect_on = 1
+                                Cruising_Flag = 9
+                                print 'Cruising_Flag Path_Dect循迹模式 %d '%Cruising_Flag
+                elif buffer[1]=='00':
+                        RevStatus=0
+                        Cruising_Flag = 0
+                        print 'Cruising_Flag正常模式 %d '%Cruising_Flag
+                #else:
+                        #Cruising_Flag = 0def send_angle(angle) : 
+        elif buffer[0]=='a0':
+                RevStatus=2
+                Tangle=hex(eval('0x'+buffer[1]))
+                Tangle=int(Tangle,16)
+                TurnAngle=Tangle
+                Golen=hex(eval('0x'+buffer[2]))
+                Golen=int(Golen,16)
+                Golength=Golen
+        elif buffer[0]=='a1':
+                RevStatus=1
+                Tangle=hex(eval('0x'+buffer[1]))
+                Tangle=int(Tangle,16)
+                TurnAngle=Tangle
+                Golen=hex(eval('0x'+buffer[2]))
+                Golen=int(Golen,16)
+                Golength=Golen
+        elif buffer[0]=='40':
+                temp=hex(eval('0x'+buffer[1]))
+                temp=int(temp,16)
+                print 'mode_flag====== %d '%temp
+                motor_flag=temp
+        elif buffer[0]=='32':           
+                XRservo.XiaoRGEEK_SaveServo()
+        elif buffer[0]=='33':           
+                XRservo.XiaoRGEEK_ReSetServo()
+        elif buffer[0]=='04':           #Switch mode FF040000FF turn on  FF040100FF turn off
+                if buffer[1]=='00':
+                        Open_Light()
+                elif buffer[1]=='01':
+                        Close_Light()
+                else:
+                        print 'error1 command!'
+        elif buffer[0]=='05':           #Read Voltage FF050000FF
+                if buffer[1]=='00':
+                        Vol = XRservo.XiaoRGEEK_ReadVol()
+                        print 'Read_Voltage %d '%Vol
+                else:
+                        print 'error2 command!'
+        elif buffer[0]=='06':           #Read pluse FF060000FF read 1 pluse  FF060100FF read 2 pluse
+                if buffer[1]=='00':
+                        Speed1 = XRservo.XiaoRGEEK_SpeedCounter1()
+                        print 'Read_Voltage %d '%Speed1
+                elif buffer[1]=='01':
+                        Speed2 = XRservo.XiaoRGEEK_SpeedCounter2()
+                        print 'Read_Voltage %d '%Speed2
+                else:
+                        print 'error3 command!'
+        elif buffer[0]=='09':           #Switch mode FF040000FF turn on  FF040100FF turn off
+                if buffer[1]=='00':
+                        Open_Buzer()
+                elif buffer[1]=='01':
+                        Close_Buzer()
+                else:
+                        print 'error1 command!'
+        else:
+                print 'error4 command!'
 
 
 def uart_user(func):
-	global ser
-	print('serial test start ...')
-	while True:
-		Uart_rcv=ser.read()
-		ser.write(Uart_rcv)
+        global ser
+        print('serial test start ...')
+        while True:
+                Uart_rcv=ser.read()
+                ser.write(Uart_rcv)
+
+                
 
 
-
+class PILE_A(threading.Thread) :
+        def __init__(self, *nom):
+                threading.Thread.__init__(self)  # ne pas oublier cette ligne
+                #self.PILE = PILE
+                print "toto"
+        def run(self):
+                while True :
+                        #print "post_import"
+                        #PILE = []
+                        #global PILE
+                        #print len(PILE)
+                        while len(PILE) > 0:
+                                x=PILE[-1]
+                                del PILE[-1]
+                                print "post_enter"
+                                print x
+                                x = str(x[5:10])
+                                nom = x
+                                print nom
+                                s = []
+                                print "enter"
+                                if nom == "FORWA" : 
+                                            while s[0:len(s)-2] != "FORWA": #left turn signal
+                                                serialArduino.write("FORWA")
+                                                time.sleep(0.01)
+                                                print "FORWA"
+                                                if serialArduino.in_waiting > 0  :
+                                                        s = str(serialArduino.readline())
+                                if nom == "BACKW" : 
+                                        while s[0:len(s)-2] != "BACKW": #left turn signal
+                                                serialArduino.write("BACKW")
+                                                time.sleep(0.01)
+                                                print "BACKW"
+                                                if serialArduino.in_waiting > 0  :
+                                                        s = str(serialArduino.readline())
+                                if nom == "LEFT*" : 
+                                        while s[0:len(s)-2] != "LEFT*": #left turn signal
+                                                serialArduino.write("LEFT*")
+                                                time.sleep(0.01)
+                                                print "LEFT*"
+                                                if serialArduino.in_waiting > 0  :
+                                                        s = str(serialArduino.readline())
+                                if nom == "RIGHT" : 
+                                        while s[0:len(s)-2] != "RIGHT": #left turn signal
+                                                serialArduino.write("RIGHT")
+                                                time.sleep(0.01)
+                                                print "RIGHT"
+                                                if serialArduino.in_waiting > 0  :
+                                                        s = str(serialArduino.readline())
+                                if nom == "BRAKE" : 
+                                        while s[0:len(s)-2] != "BRAKE": #left turn signal
+                                                serialArduino.write("BRAKE")
+                                                time.sleep(0.01)
+                                                print "BRAKE"
+                                                if serialArduino.in_waiting > 0  :
+                                                        s = str(serialArduino.readline())
+                                if nom == "DARK*":
+                                        while s[0:len(s)-2] != "DARK*":
+                                                serialArduino.write("DARK*")
+                                                time.sleep(0.01)
+                                                print "DARK*"
+                                                if serialArduino.in_waiting > 0  :
+                                                        s = str(serialArduino.readline())
+                                if nom == "LIGHT":
+                                        while s[0:len(s)-2] != "LIGHT":
+                                                serialArduino.write("LIGHT")
+                                                time.sleep(0.01)
+                                                print "LIGHT"
+                                                if serialArduino.in_waiting > 0  :
+                                                        s = str(serialArduino.readline())
+                
+############################################################################
+#
+# MAIN
+#
 init_light()
-
+#s = str(serialArduino.read())
+#LEDr = LED("BRAKE", use)
+#LEDr.start()
+PILE_b = PILE_A()
+PILE_b.start()
+PILE.append('LED("BRAKE")')
+Motor_Stop()
+print "end"
 #define TCP server related variable
-HOST=''
+HOST='192.168.1.1' # to  be changed to 192.168.100.1
 PORT=2001
 BUFSIZ=1
 ADDR=(HOST,PORT)
 rec_flag=0
 i=0
 buffer=[]
+
 #start TCP server, monitor 2001 port
 tcpSerSock=socket(AF_INET,SOCK_STREAM)
 tcpSerSock.bind(ADDR)
@@ -870,9 +1007,10 @@ threads.append(t2)
 call("sh start_mjpg_streamer.sh &",shell=True)
 time.sleep(2)
 for t in threads:
-		t.setDaemon(True)
-		t.start()
-		print 'theads stat...'
+    t.setDaemon(True)
+    t.start()
+    print 'theads stat...'
+
 print 'all theads stat...'
 while True:
     print 'waitting for connection...'
@@ -903,7 +1041,6 @@ while True:
             else:
                 buffer.append(data)
                 i+=1
-   
         #print(binascii.b2a_hex(data))
     tcpCliSock.close()
 Motor_Stop()

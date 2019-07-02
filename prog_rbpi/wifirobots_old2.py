@@ -1,4 +1,4 @@
-#coding:utf-8
+﻿#coding:utf-8
 '''
 Raspberry Pi WiFi video robot car drive souce code
 Writer: liuviking
@@ -26,7 +26,7 @@ global Path_Dect_on
 Path_Dect_on = 0
 #from serial import *
 import serial
-serialArduino = serial.Serial(port = '/dev/ttyACM0',baudrate = 38400, timeout = 0.01)
+serialArduino = serial.Serial('/dev/ttyACM0', 9600)
 ##serialArduino.readline()
 ##serialArduino.write()
 
@@ -50,7 +50,6 @@ IN1 = 19        #//Motor port 1
 IN2 = 16        #//Motor port 2
 IN3 = 21        #//Motor port 3
 IN4 = 26        #//Motor port 4
-
 ########Buzer port #########################
 BUZ = 10
 
@@ -66,34 +65,32 @@ IR_L = 27       #Left line following infrared sensor
 IR_M = 22       #Middle obstacle avoidance infrared sensor
 IRF_R = 23      #Right object tracking infrared sensror
 IRF_L = 24      #Left object tracking infrardd sensor
-
 global Cruising_Flag
 Cruising_Flag = 0       #//Current circulation mode
-
 global Pre_Cruising_Flag
 Pre_Cruising_Flag = 0   #//Precycling mode
 
 global RevStatus
 RevStatus = 0
-
 global TurnAngle
 TurnAngle=0;
-
 global Golength
 Golength=0
-
 buffer = ['00','00','00','00','00','00']
-
 global motor_flag
 motor_flag=1
+
 
 global left_speed
 global right_speed
 global left_speed_hold
 global right_speed_hold
+
+
+
+
 left_speed=100
 right_speed=100
-
 #######################################
 #########Pin type setup and initialization##########
 #######################################
@@ -142,21 +139,14 @@ GPIO.setup(ECHO,GPIO.IN,pull_up_down=GPIO.PUD_UP)#ultrasonic module receiving en
 ##Exit parameter：none
 ####################################################
 def     Open_Light():#turn on headlight LED0
-        s = []
         GPIO.output(LED0,False)#Headlight's anode to 5V, cathode to IO port
         ##read = serialArduino.readline()
-        while s[0:len(s)-2] != "LED00": #disable front light
-                serialArduino.write("LED00")
-                time.sleep(0.1)
-                if serialArduino.in_waiting > 0  :
-                        s = str(serialArduino.readline())
-
-
-        while s[0:len(s)-2] != "LED60": #disable red light wen front activated                                                                                  
-                serialArduino.write("LED60")
-                time.sleep(0.1)
-                if serialArduino.in_waiting > 0  :
-                        s = str(serialArduino.readline()))
+        while s[0:len(s)-1] != "LED01":
+                s = str(serialArduino.readline())
+                serialArduino.write("LED01")
+        while s[0:len(s)-1] != "LED61":
+                s = str(serialArduino.readline())
+                serialArduino.write("LED61")
         time.sleep(1)
 ####################################################
 ##Function name Close_Light()
@@ -165,13 +155,12 @@ def     Open_Light():#turn on headlight LED0
 ##Exit parameter：none
 ####################################################
 def     Close_Light():#Close headlight
-        s = []
         GPIO.output(LED0,True)#Headlight's anode to 5V, cathode to IO port
         ##read = serialArduino.readline()
-        while s[0:len(s)-2] != "LED00":
+        while s[0:len(s)-1] != "LED00":
                 s = str(serialArduino.readline())
                 serialArduino.write("LED00")
-        while s[0:len(s)-2] != "LED60":
+        while s[0:len(s)-1] != "LED60":
                 s = str(serialArduino.readline())
                 serialArduino.write("LED60")
         time.sleep(1)
@@ -709,7 +698,6 @@ def     Path_Dect_img_processing(func):
 ##Exit parameter：none
 ####################################################    
 def Communication_Decode():
-        s = []
         global RevStatus
         global TurnAngle
         global Golength
@@ -725,90 +713,90 @@ def Communication_Decode():
         if buffer[0]=='00':
                 if buffer[1]=='01':                             #forward
                         Motor_Forward()
-                        while s[0:len(s)-2] != "LED10": #left turn signal
+                        while s[0:len(s)-1] != "LED10": #left turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED10")
-                        while s[0:len(s)-2] != "LED20": #right turn signal
+                        while s[0:len(s)-1] != "LED20": #right turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED20")
-                        while s[0:len(s)-2] != "LED30": #rear light
+                        while s[0:len(s)-1] != "LED30": #rear light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED30")
-                        while s[0:len(s)-2] != "LED50": #brake light
+                        while s[0:len(s)-1] != "LED50": #brake light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED50")
                                 
                 elif buffer[1]=='02':                   #backward
                         Motor_Backward()
-                        while s[0:len(s)-2] != "LED10": #left turn signal
+                        while s[0:len(s)-1] != "LED10": #left turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED10")
-                        while s[0:len(s)-2] != "LED20": #right turn signal
+                        while s[0:len(s)-1] != "LED20": #right turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED20")
-                        while s[0:len(s)-2] != "LED31": #rear light
+                        while s[0:len(s)-1] != "LED31": #rear light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED31")
-                        while s[0:len(s)-2] != "LED50": #brake light
+                        while s[0:len(s)-1] != "LED50": #brake light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED50")
                                 
                 elif buffer[1]=='03':                   #turn left
                         Motor_TurnLeft()
-                        while s[0:len(s)-2] != "LED11": #left turn signal
+                        while s[0:len(s)-1] != "LED11": #left turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED11")
-                        while s[0:len(s)-2] != "LED20": #right turn signal
+                        while s[0:len(s)-1] != "LED20": #right turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED20")
-                        while s[0:len(s)-2] != "LED30": #rear light
+                        while s[0:len(s)-1] != "LED30": #rear light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED30")
-                        while s[0:len(s)-2] != "LED50": #brake light
+                        while s[0:len(s)-1] != "LED50": #brake light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED50")
                 elif buffer[1]=='04':                   #turn right
                         Motor_TurnRight()
-                        while s[0:len(s)-2] != "LED10": #left turn signal
+                        while s[0:len(s)-1] != "LED10": #left turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED10")
-                        while s[0:len(s)-2] != "LED21": #right turn signal
+                        while s[0:len(s)-1] != "LED21": #right turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED21")
-                        while s[0:len(s)-2] != "LED30": #rear light
+                        while s[0:len(s)-1] != "LED30": #rear light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED30")
-                        while s[0:len(s)-2] != "LED50": #brake light
+                        while s[0:len(s)-1] != "LED50": #brake light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED50")
                 elif buffer[1]=='00':                   #stop
                         Motor_Stop()
                 elif buffer[1]=='04':                   #turn right
                         Motor_TurnRight()
-                        while s[0:len(s)-2] != "LED10": #left turn signal
+                        while s[0:len(s)-1] != "LED10": #left turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED10")
-                        while s[0:len(s)-2] != "LED20": #right turn signal
+                        while s[0:len(s)-1] != "LED20": #right turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED20")
-                        while s[0:len(s)-2] != "LED30": #rear light
+                        while s[0:len(s)-1] != "LED30": #rear light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED30")
-                        while s[0:len(s)-2] != "LED51": #brake light
+                        while s[0:len(s)-1] != "LED51": #brake light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED51")
                 else:
                         Motor_Stop()
-                        while s[0:len(s)-2] != "LED10": #left turn signal
+                        while s[0:len(s)-1] != "LED10": #left turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED10")
-                        while s[0:len(s)-2] != "LED20": #right turn signal
+                        while s[0:len(s)-1] != "LED20": #right turn signal
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED20")
-                        while s[0:len(s)-2] != "LED30": #rear light
+                        while s[0:len(s)-1] != "LED30": #rear light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED30")
-                        while s[0:len(s)-2] != "LED51": #brake light
+                        while s[0:len(s)-1] != "LED51": #brake light
                                 s = str(serialArduino.readline())
                                 serialArduino.write("LED51")
         elif buffer[0]=='02':
@@ -956,82 +944,52 @@ def uart_user(func):
                 Uart_rcv=ser.read()
                 ser.write(Uart_rcv)
 
-############################################################################
-#
-# MAIN
-#
+
+
 init_light()
+while s[0:len(s)-1] != "LED10": #left turn signal
+                                s = str(serialArduino.readline())
+                                serialArduino.write("LED10")
+while s[0:len(s)-1] != "LED20": #right turn signal
+                                s = str(serialArduino.readline())
+                                serialArduino.write("LED20")
+while s[0:len(s)-1] != "LED30": #rear light
+                                s = str(serialArduino.readline())
+                                serialArduino.write("LED30")
+while s[0:len(s)-1] != "LED51": #brake light
+                                s = str(serialArduino.readline())
+                                serialArduino.write("LED51")
+while s[0:len(s)-1] != "LED00": #disable front light
+        s = str(serialArduino.readline())
+        serialArduino.write("LED00")
+while s[0:len(s)-1] != "LED60": #disable red light wen front activated                                                                                  
+        s = str(serialArduino.readline())
+        serialArduino.write("LED60")
 
 #define TCP server related variable
-HOST='192.168.100.1' # to  be changed to 192.168.100.1
+HOST='192.168.1.1'
 PORT=2002
 BUFSIZ=1
 ADDR=(HOST,PORT)
 rec_flag=0
 i=0
 buffer=[]
-
-s = []
-while s[0:len(s)-2] != "LED10": #left turn signal
-    print "0"
-    #print s[0:len(s)-2]
-    serialArduino.write("LED10")
-    time.sleep(0.1)
-    if serialArduino.in_waiting > 0  :
-            s = str(serialArduino.readline())
-    
-
-while s[0:len(s)-2] != "LED20": #right turn signal
-    serialArduino.write("LED20")
-    time.sleep(0.1)
-    if serialArduino.in_waiting > 0  :
-            s = str(serialArduino.readline())
-
-while s[0:len(s)-2] != "LED30": #rear light
-    serialArduino.write("LED30")
-    time.sleep(0.1)
-    if serialArduino.in_waiting > 0  :
-            s = str(serialArduino.readline())
-
-
-while s[0:len(s)-2] != "LED51": #brake light
-    serialArduino.write("LED51")
-    time.sleep(0.1)
-    if serialArduino.in_waiting > 0  :
-            s = str(serialArduino.readline())
-
-
-while s[0:len(s)-2] != "LED00": #disable front light
-    serialArduino.write("LED00")
-    time.sleep(0.1)
-    if serialArduino.in_waiting > 0  :
-            s = str(serialArduino.readline())
-
-
-while s[0:len(s)-2] != "LED60": #disable red light wen front activated                                                                                  
-    serialArduino.write("LED60")
-    time.sleep(0.1)
-    if serialArduino.in_waiting > 0  :
-            s = str(serialArduino.readline())
-
-
 #start TCP server, monitor 2001 port
 tcpSerSock=socket(AF_INET,SOCK_STREAM)
 tcpSerSock.bind(ADDR)
 tcpSerSock.listen(1)
-
+s = ""
 threads = []
-t1 = threading.Thread(target=Cruising_Mod,args=(u'Cruise',))
+t1 = threading.Thread(target=Cruising_Mod,args=(u'模式切换',))
 threads.append(t1)
-t2 = threading.Thread(target=Path_Dect_img_processing,args=(u'PathDec',))
+t2 = threading.Thread(target=Path_Dect_img_processing,args=(u'图像处理',))
 threads.append(t2)
 
 time.sleep(2)
 for t in threads:
-    t.setDaemon(True)
-    t.start()
-    print 'theads stat...'
-
+                t.setDaemon(True)
+                t.start()
+                print 'theads stat...'
 print 'all theads stat...'
 while True:
     print 'waitting for connection...'
